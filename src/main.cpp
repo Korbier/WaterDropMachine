@@ -12,16 +12,26 @@ int ouverture_durees[nb_ouverture]; //Durée de chaque ouverture
 int ouverture_delais[nb_ouverture]; //Delai de demarrage pour chacune des ouvertures
 int flash_delais[nb_flash];         //Delai de demarrage pour chacun des flashs
 
-int     amorce  = 100; //Duree de l'amorce en ms
+int     amorce  = 500; //Duree de l'amorce en ms
 boolean started = true;
+
+int pin_V1 = 8;
+
+void initPins() {
+	pinMode(pin_V1, OUTPUT);
+  	digitalWrite(pin_V1, LOW);
+}
 
 void initConfiguration() {
   
   ouverture_delais[0] = 0;
-  ouverture_durees[0] = 100;
+  ouverture_durees[0] = 50;
 
-  ouverture_delais[1] = 50;
-  ouverture_durees[1] = 100;
+  ouverture_delais[1] = 150;
+  ouverture_durees[1] = 50;
+
+  ouverture_delais[2] = 500;
+  ouverture_durees[2] = 50;
 
   flash_delais[0] = 2000;
   flash_delais[1] = 2000;
@@ -32,10 +42,15 @@ void doAmorce() {
   Serial.print("Amorce pour une durée de " );
   Serial.print( amorce );
   Serial.println( "ms" );
+  digitalWrite(pin_V1, HIGH);
+  delay( amorce );
+  digitalWrite(pin_V1, LOW);
+  delay(500);
 }
 
 void triggerOuvertureVanne( int indexOuverture ) {
   if ( ouverture_durees[indexOuverture] > 0 ) {
+	digitalWrite(pin_V1, HIGH);
     Serial.print("Déclenchement de l'ouverture " );
     Serial.print( indexOuverture );
     Serial.print(" (delai : " );
@@ -48,6 +63,7 @@ void triggerOuvertureVanne( int indexOuverture ) {
 
 void triggerFermetureVanne( int indexFermeture ) {
   if ( ouverture_durees[indexFermeture] > 0 ) {
+	digitalWrite(pin_V1, LOW);
     Serial.print("Déclenchement de la fermeture " );
     Serial.print( indexFermeture );
     Serial.print(" apres " );
@@ -69,11 +85,11 @@ void triggerFlash( int indexFlash ) {
 void setup() {
   
   //Initialisation du Serial pour debug
-	Serial.begin(9600);
+Serial.begin(9600);
 	while (!Serial) {
 		; // wait for serial port to connect. Needed for native USB
 	}
-
+  initPins();
   initConfiguration();
   doAmorce() ;
 }
