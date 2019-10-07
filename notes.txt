@@ -1,0 +1,148 @@
+1 electrovanne
+1 -> 4 flashs
+1 appareil
+1 LCD + 4 boutons
+
+A régler :
+	Le nombre d'ouverture de vanne (Max: 5)
+	Le delai entre chaque ouverture
+	La durée de chaque ouverture
+	Le délai de déclenchement de chaque flash
+
+
+012345678901234567
+012345678901234567
+
++----------------+
+|^ OUVERTURE  1 *| => * = Durée > 0, ouverture active
+|v DELAI < 1000 >| => VAL = 0 => 9999 (Pas de 10, Defaut 100)
++----------------+
+
++----------------+
+|^ OUVERTURE  1 *| => * = Durée > 0, ouverture active
+|v DUREE < 1000 >| => VAL = 0 => 9999 (Pas de 10, Defaut 0, à 0 pas d'ouverture (ne pas tenir cmpte du delai dans ce cas))
++----------------+
+
++----------------+
+|^ AMORCE        | => * = Durée > 0, ouverture active
+|v DUREE < 1000 >| => VAL = 0 => 2000 (Pas de 10, Defaut 500, à 0 pas d'amorce)
++----------------+
+
++----------------+
+|^ FLASH 1      *| => * = DELAI > 0, flash actif
+|v DELAI < 1000 >| => VAL = 0 => 1000 (Pas de 10, Defaut 100, à 0 pas de declenchement)
++----------------+	
+
++----------------+
+|^ DEMARRER      |
+|v          OK > | => > = Demarrage de la sequence
++----------------+	
+
+const int nb_ouverture = 3;
+const int nb_flash     = 4;
+const int nb_systems   = nb_ouverture + nb_flash;
+
+const int triggerTypeOuverture = 1;
+const int triggerTypeFlash     = 2;
+
+ouverture_durees = int[nb_ouverture];
+ouverture_delais = int[nb_ouverture];
+flash_delais     = int[nb_flash];
+
+amorce = 500;
+bool start = false;
+
+setup() {
+	
+	// initialisation port série
+	Serial.begin(57600);
+	while (!Serial) {
+		; // wait for serial port to connect. Needed for native USB
+	}
+	
+}
+
+loop() {
+
+	if ( start() ) {
+	
+		//Amorce de la vanne
+		amorce()
+	
+		time = millis();
+		triggerOrder    = int[nb_systems];
+		triggerTime     = int[nb_systems];
+		triggerTarget   = int[nb_systems];
+		triggerTargetId = int[nb_systems];
+		
+		//Initialisation des tableaux de travail
+		for (int i=0; i<nb_systems; i++) {
+			triggerOrder[i]    = -1;
+			triggerTime[i]     = -1;
+			triggerTarget[i]   = -1;
+			triggerTargetId[i] = -1;		
+		}
+		
+		//Enregistrement des ouvertures de vanne
+		for ( int i=0; i<nb_ouverture; i++ ) {
+			triggerTime[i]     = ouverture_delais[i] + time;
+			triggerTarget[i]   = triggerTypeOuverture;
+			triggerTargetId[i] = i;
+		}	
+		
+		//Enregistrement des flashs
+		for ( int i=0; i<nb_flash; i++ ) {
+			triggerTime[nb_ouverture + i]     = flash_delais[i] + time;
+			triggerTarget[nb_ouverture + i]   = triggerTypeFlash;	
+			triggerTargetId[nb_ouverture + i] = i;
+		}	
+		
+		//Determination de l'ordre d'execution des systemes
+		for (  int i=0; i<nb_systems; i++ ) {
+			
+			int min      = 999999999999999;
+			int minIndex = -1;
+			
+			for ( int j=0; j<nb_systems; j++ ) {
+				
+				//On recherche d'abord si l'index courant a été traité
+				bool isSorted = false;
+				for (  int k=0; k<nb_systems; k++ ) {
+					if ( triggerOrder[k] = j ) isSorted = true;
+				}
+				
+				//Si l'index courant n'a pas ete traite, on regarde si il est le plus petit
+				if ( !isSorted && min > triggerTime[j] ) {
+					min = triggerTime[j];
+					minIndex = j;
+				}
+								
+			}
+			
+			//On ajoute l'index courant a la liste des index traités
+			triggerOrder[i] = j;
+			
+		}
+				
+		//Declenchement des systemes dans l'ordre defini
+		for ( int i=0; i<nb_systems; i++ ) {
+			
+			int indexToExecute = triggerOrder[i];
+			
+			while ( millis() < triggerTime[indexToExecute] ) {
+				;
+			}
+			
+			if ( triggerTarget[indexToExecute] == triggerTypeOuverture ) {
+				triggerOuvertureVanne( triggerTargetId[indexToExecute] );
+			} else {
+				triggerFlash( triggerTargetId[indexToExecute] );
+			}
+			
+		}
+		
+	} else {
+		menu();
+	}
+	
+}
