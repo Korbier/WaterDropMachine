@@ -17,9 +17,16 @@ boolean started = true;
 
 int pin_V1 = 8;
 
+int pin_F1 = 9;
+
 void initPins() {
+	
 	pinMode(pin_V1, OUTPUT);
   	digitalWrite(pin_V1, LOW);
+	
+	pinMode(pin_F1, OUTPUT);
+	digitalWrite(pin_F1, LOW);
+
 }
 
 void initConfiguration() {
@@ -34,8 +41,7 @@ void initConfiguration() {
   ouverture_durees[2] = 50;
 
   flash_delais[0] = 2000;
-  flash_delais[1] = 2000;
-
+  
 }
 
 void doAmorce() {
@@ -74,7 +80,10 @@ void triggerFermetureVanne( int indexFermeture ) {
 
 void triggerFlash( int indexFlash ) {
   if ( flash_delais[indexFlash] > 0 ) {
-    Serial.print("Déclenchement du flash " );
+	digitalWrite(pin_F1, HIGH);
+	delay( 10 );
+	digitalWrite(pin_F1, LOW);	  
+  	Serial.print("Déclenchement du flash " );
     Serial.print( indexFlash );
     Serial.print(" (delai : " );
     Serial.print( flash_delais[indexFlash] ); 
